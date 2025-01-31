@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <Target Name="AuthenticateDeployDestinations" />
+    <Import Condition="Exists('$(LocalProperties)')" Project="$(LocalProperties)" />
+    <Import Project="$(MSBuildThisFileDirectory)Ed.NuGet.targets" />
+
+    <Target Name="CleanRepository" DependsOnTargets="FindGitRepositories">
+        <MSBuild Projects="$(MSBuildThisFileFullPath)"
+                 Properties="Repository=%(Repository.RepositoryRoot); ExcludeWildcards=$(PurgeExcludeWildcards)"
+                 Targets="PurgeRepository" />
+    </Target>
+
+    <Target Name="Deploy" DependsOnTargets="AuthenticateDeployDestinations">
+        <MSBuild Projects="@(ProjectReference)"
+                 Targets="Deploy"
+                 BuildInParallel="False"
+                 Properties="BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)"
+                 SkipNonexistentProjects="%(ProjectReference.SkipNonexistentProjects)" />
+    </Target>
+
+    <Target Name="FindGitRepositories">
+        <Exec Command="git rev-parse --show-toplevel" ConsoleToMSBuild="true">
+            <Output TaskParameter="ConsoleOutput" PropertyName="GitRoot" />
+        </Exec>
+        <ItemGroup>
+            <Repository Include="$(GitRoot)\**\.git\index" />
+            <Repository>
+                <RepositoryRoot>%(RootDir)%(Directory)..</RepositoryRoot>
+            </Repository>
+        </ItemGroup>
+    </Target>
+
+    <Target Name="PurgeRepository">
+        <Error Condition="!Exists('$(Repository)')" Text="$(Repository): No such git repository!"></Error>
+        <MSBuild Condition="'$(ExcludeWildcards)'!=''"
+                 Projects="$(MSBuildThisFileFullPath)"
+                 Properties="Value=$(ExcludeWildcards)"
+                 Targets="ReturnIdentity">
+            <Output ItemName="ExcludeWildcard" TaskParameter="TargetOutputs" />
+        </MSBuild>
+        <MSBuild Condition="'@(ExcludeWildcard)'!=''"
+                 Projects="$(MSBuildThisFileFullPath)"
+                 Properties="Repository=$(Repository); ExcludeWildcard=%(ExcludeWildcard.Identity)"
+                 Targets="ResolveExcludeExpression">
+            <Output ItemName="ExcludeExpression" TaskParameter="TargetOutputs" />
+        </MSBuild>
+        <Exec Command="git clean -f -d -x -e @(ExcludeExpression,' ') &quot;$(Repository)&quot;"
+              WorkingDirectory="$(Repository)" />
+    </Target>
+
+    <Target Name="ReturnIdentity" Returns="$(Value)" />
+
+    <Target Name="ResolveExcludeExpression" Returns="@(ResolvedExcludeExpression)">
+        <ItemGroup>
+            <ExcludedFile Include="$(Repository)\$(ExcludeWildcard.Replace('/','\'))*\**\*" />
+        </ItemGroup>
+        <ItemGroup Condition="'@(ExcludedFile)'!=''">
+            <ResolvedExcludeExpression Include="--exclude &quot;glob:$(ExcludeWildcard)*/&quot;" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="RunUnitTests">
+        <MSBuild Projects="@(ProjectReference)"
+                 Targets="RunUnitTests"
+                 BuildInParallel="True"
+                 Properties="BuildingSolutionFile=true; CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents); SolutionDir=$(SolutionDir); SolutionExt=$(SolutionExt); SolutionFileName=$(SolutionFileName); SolutionName=$(SolutionName); SolutionPath=$(SolutionPath)"
+                 SkipNonexistentProjects="%(ProjectReference.SkipNonexistentProjects)" />
+    </Target>
+    
+    
+    <Target Name="RestoreBothPackageReferenceAndPackagesconfigBasedNuGets"
+            BeforeTargets="RunUnitTests"
+            DependsOnTargets="Restore;WixNuGetPackagerPrepare">
+        <Exec Command="&quot;$(WixNuGetPackagerNuGetExePath)&quot; restore @(NuGetOptions, ' ') &quot;$(SolutionPath)&quot;" />
+    </Target>
+
+
+    <Target Name="PackSolution" DependsOnTargets="ValidateSolution;Pack" />
+    <Target Name="ValidateSolution" DependsOnTargets="CleanRepository;RestoreBothPackageReferenceAndPackagesconfigBasedNuGets;RunUnitTests" />
+    <Target Name="BuildSolution" DependsOnTargets="RestoreBothPackageReferenceAndPackagesconfigBasedNuGets;Build" />
+
+</Project>

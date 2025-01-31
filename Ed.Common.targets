@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <PropertyGroup>
+        <VersionCache>$(IntermediateOutputPath)VersionInformation.cache</VersionCache>
+    </PropertyGroup>
+
+    <Target Name="CleanVersions" AfterTargets="Clean">
+        <Delete Files="$(VersionCache)" />
+    </Target>
+
+    <Target Name="Deploy" />
+
+    <Target Name="DeployTargetFile" DependsOnTargets="ResolveArtifactFileName">
+        <Error Condition=" '$(ArtifactSubDir)' != '' AND !HasTrailingSlash('$(ArtifactSubDir)')"
+               Text="The ArtifactSubDir if set must end with a trailing slash." />
+        <Error Condition=" '$(ArtifactDirectory)' == '' "
+               Text="The ArtifactDirectory must be set." />
+        <Error Condition="!HasTrailingSlash('$(ArtifactDirectory)')"
+               Text="The ArtifactDirectory must end with a trailing slash." />
+        <PropertyGroup>
+            <ArtifactFullDirectory>$(ArtifactDirectory)$(ArtifactSubDir)</ArtifactFullDirectory>
+            <Artifact>$(ArtifactFullDirectory)$(ArtifactFileName)</Artifact>
+        </PropertyGroup>
+        <Error Condition="$(PreserveExistingArtifacts) == 'True' AND Exists('$(Artifact)') "
+               Text="$(Artifact): File already exists!" />
+		<Message Text="DeployTargetFile: Copying $(TargetPath) to $(Artifact)"/>
+		<MakeDir Directories="$(ArtifactFullDirectory)" Condition="'$(ArtifactSubDir)' != '' AND !Exists('$(ArtifactFullDirectory)')"/>			   
+        <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(Artifact)" />
+    </Target>
+
+    <Target Name="ImportNuGetReferences" DependsOnTargets="TransformNuGetReferences">
+        <MSBuild Projects="$(IntermediateOutputPath)NuGetReferences.xml" Targets="Import">
+            <Output TaskParameter="TargetOutputs" ItemName="NuGetReference" />
+        </MSBuild>
+    </Target>
+
+    <Target Name="ParseWorkspaceDescription" DependsOnTargets="QueryWorkspaceDescription">
+        <PropertyGroup>
+            <VersionThree>$(WorkspaceDescription.Split('-')[1])</VersionThree>
+            <VersionFourthNumber>$(WorkspaceDescription.Split('-')[2])</VersionFourthNumber>
+            <PaddedVersionFourthNumber>$(VersionFourthNumber)</PaddedVersionFourthNumber> 
+            <PaddedVersionFourthNumber Condition="$(VersionFourthNumber) &lt; 100">0$(VersionFourthNumber)</PaddedVersionFourthNumber> 
+            <PaddedVersionFourthNumber Condition="$(VersionFourthNumber) &lt; 10">00$(VersionFourthNumber)</PaddedVersionFourthNumber> 
+            <VersionThree Condition=" $(VersionFourthNumber) != '0' ">$(VersionThree.Split('.')[0]).$(VersionThree.Split('.')[1]).$([MSBuild]::Add($(VersionThree.Split('.')[2]), 1))</VersionThree>
+            <Version>$(VersionThree).$(VersionFourthNumber)</Version>
+            <PackageVersion>$(VersionThree)</PackageVersion>
+            <PackageVersion Condition=" $(VersionFourthNumber) != '0' ">$(VersionThree)-RC$(PaddedVersionFourthNumber)</PackageVersion>
+            <VersionFileSuffix Condition=" '$(ExcludeMinorVersionNumber)' != 'true' ">$(Version)</VersionFileSuffix>
+            <VersionFileSuffix Condition=" '$(ExcludeMinorVersionNumber)' == 'true' ">$(Version.Split('.')[0]).$(Version.Split('.')[1])</VersionFileSuffix>
+            <ArtifactSubDir Condition=" '$(ArtifactSubDir)' != '' ">$(ArtifactSubDir)-$(Version)\</ArtifactSubDir>
+        </PropertyGroup>
+		<message Importance="high" text="ParseWorkspaceDescription Version: $(Version)" />
+		<message Importance="high" text="ParseWorkspaceDescription VersionFileSuffix: $(VersionFileSuffix)" />
+		<message Importance="high" text="ParseWorkspaceDescription ArtifactSubDir: $(ArtifactSubDir)" />
+		<message Importance="high" text="ParseWorkspaceDescription PackageVersion: $(PackageVersion)" />
+    </Target>
+
+    <Target Name="QueryVersion" DependsOnTargets="ParseWorkspaceDescription;PrepareForBuild" Returns="$(Version)">
+        <MSBuild Condition=" Exists('$(VersionCache)') " Projects="$(VersionCache)" Targets="GetCachedVersion">
+            <Output TaskParameter="TargetOutputs" PropertyName="CachedVersion" />
+        </MSBuild>
+        <ItemGroup>
+            <CacheItems Include="&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;" />
+            <CacheItems Include="&lt;Project xmlns=&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;&gt;" />
+            <CacheItems Include="&lt;Target Name=&quot;GetCachedVersion&quot; Returns=&quot;$(Version)&quot; /&gt;" />
+            <CacheItems Include="&lt;/Project&gt;" />
+        </ItemGroup>
+        <WriteLinesToFile File="$(VersionCache)" Lines="@(CacheItems)" Overwrite="true" Encoding="utf-8" />
+		<message text="QueryVersion Version: $(Version)" />
+    </Target>
+
+    <Target Name="QueryAncestorDescription" DependsOnTargets="ResolveAncestor">
+        <Exec Command="$(LatestTagScript) --rev ancestor(@(Ancestors,','))" ConsoleToMSBuild="true">
+            <Output TaskParameter="ConsoleOutput" PropertyName="AncestorDescription" />
+        </Exec>
+		<message text="QueryAncestorDescription AncestorDescription: $(AncestorDescription)" />
+    </Target>
+
+    <Target Name="QueryWorkspaceDescription">
+        <Exec Command="$(DescriptionScript)" ConsoleToMSBuild="true">
+            <Output TaskParameter="ConsoleOutput" PropertyName="WorkspaceDescription" />
+        </Exec>
+    </Target>
+
+    <Target Name="ResolveAncestor">
+		<Exec Command="§(AncestorScript)">
+            <Output TaskParameter="ConsoleOutput" ItemName="AncestorsID" />
+        </Exec>
+        <PropertyGroup>
+			<Ancestors>$(AncestorsID.Split('-')[1])</Ancestors>
+        </PropertyGroup>
+		<message text="Ancestors: $(Ancestors)" />
+    </Target>
+
+    <Target Name="ResolveArtifactFileName" DependsOnTargets="QueryVersion">
+        <PropertyGroup>
+            <ArtifactFileName Condition=" '$(NoVersionNumberInArtifact)' != 'true' ">$(TargetName)-$(VersionFileSuffix)$(TargetExt)</ArtifactFileName>
+            <ArtifactFileName Condition=" '$(NoVersionNumberInArtifact)' == 'true' ">$(TargetName)$(TargetExt)</ArtifactFileName>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="RunUnitTests" DependsOnTargets="Build" />
+
+    <Import Project="$(SolutionDir)$(SolutionName).Common.targets"
+            Condition="Exists('$(SolutionDir)$(SolutionName).Common.targets')" />
+    <Import Condition="Exists('$(LocalTargets)')" Project="$(LocalTargets)" />
+
+</Project>

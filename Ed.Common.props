@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <Import Condition="Exists('$(LocalProperties)')" Project="$(LocalProperties)" />
+    <Import Project="$(SolutionDir)$(SolutionName).Common.props"
+            Condition="Exists('$(SolutionDir)$(SolutionName).Common.props')" />
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+            Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props') and '$(MicrosoftCommonPropsHasBeenImported)' != 'true'" />
+    <PropertyGroup>
+        <ArtifactsDirectory>Y:\ForNuGet\OutputArtifacts\</ArtifactsDirectory>
+        <ArtifactDirectory Condition=" '$(ArtifactDirectory)' == '' ">$(TEMP)\$(MSBuildProjectName)\</ArtifactDirectory>
+        <ArtifactSubDir Condition=" '$(ArtifactSubDir)' == '' "></ArtifactSubDir>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <DescriptionScript Condition=" '$(DescriptionScript)' == '' "><![CDATA[git describe --tags --match Release-*.*.* --long]]></DescriptionScript>
+        <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+        <NoVersionNumberInArtifact Condition=" '$(NoVersionNumberInArtifact)' == '' ">false</NoVersionNumberInArtifact>
+        <ExcludeMinorVersionNumber Condition=" '$(ExcludeMinorVersionNumber)' == '' ">false</ExcludeMinorVersionNumber>
+        <LatestTagScript Condition=" '$(LatestTagScript)' == '' "><![CDATA[git describe --tags --match Release-*.*.* --long]]></LatestTagScript>
+        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+        <PreserveExistingArtifacts Condition=" '$(PreserveExistingArtifacts)' == '' ">True</PreserveExistingArtifacts>
+        <BaseIntermediateOutputPath Condition=" '$(BaseIntermediateOutputPath)' == '' And '$(PlatformName)' == 'AnyCPU' ">obj\$(Platform)\</BaseIntermediateOutputPath>
+        <BaseIntermediateOutputPath Condition=" '$(BaseIntermediateOutputPath)' == '' And '$(PlatformName)' != 'AnyCPU' ">obj\</BaseIntermediateOutputPath>
+        <OutputPath Condition=" '$(OutputPath)' == '' ">bin\$(Platform)\$(Configuration)\</OutputPath>
+        <TargetFrameworkVersion Condition=" '$(TargetFrameworkVersion)' == '' ">v4.5.2</TargetFrameworkVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(UWPSDKPath) == ''">
+        <UWPSDKVersion>$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))</UWPSDKVersion>
+        <UWPSDKPath>$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPlatformSDKLocation('Windows', '10.0'))bin\$(UWPSDKVersion)</UWPSDKPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <UWPSDKPathX64>$(UWPSDKPath)\x64</UWPSDKPathX64>
+        <SignToolPathX64>$(UWPSDKPathX64)\signtool.exe</SignToolPathX64>
+  </PropertyGroup>
+</Project>

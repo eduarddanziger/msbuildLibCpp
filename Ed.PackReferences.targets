@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <Import Project="$(MSBuildBinPath)\Microsoft.Common.targets" />
+    <Import Project="$(MSBuildThisFileDirectory)Ed.NuGet.targets" />
+
+    <PropertyGroup>
+        <NuGetFeed Condition=" '$(NuGetFeed)' == '' ">$(TEMP)\NuGetFeed\</NuGetFeed>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <NuGetProperty Include="SolutionDir=&quot;$(SolutionDir.TrimEnd('\'))\\&quot;" />
+    </ItemGroup>
+
+    <Target Name="_CheckForCompileOutputs">
+        <!-- Note: The implementation from Microsoft.Common.targets only supports one intermediate assembly. -->
+        <ItemGroup>
+            <FileWrites Include="@(IntermediateAssembly)" Condition="Exists('%(IntermediateAssembly.Identity)')" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="CoreCompile"
+            DependsOnTargets="ResolveIntermediateAssembly;ResolveNuGetArguments;WixNuGetPackagerPrepare"
+            Inputs="@(_ResolvedProjectReferencePaths);@(ProjectReferenceWithConfiguration->'%(RootDir)%(Directory)%(Filename).nuspec')"
+            Outputs="@(IntermediateAssembly)">
+        <ItemGroup>
+            <NuGetOptions
+                Include="-OutputDirectory &quot;$(MSBuildProjectDirectory)\$(IntermediateOutputPath.TrimEnd('\'))\\&quot;" />
+        </ItemGroup>
+        <Exec
+            Command="&quot;$(WixNuGetPackagerNuGetExePath)&quot; pack @(NuGetOptions, ' ') @(ProjectReferenceWithConfiguration->'%(Arguments)')"
+            WorkingDirectory="%(ProjectReferenceWithConfiguration.WorkingDirectory)" />
+    </Target>
+
+    <Target Name="CreateManifestResourceNames" />
+
+    <Target Name="ResolveIntermediateAssembly" DependsOnTargets="QueryVersion;ResolveProjectReferences">
+        <ItemGroup>
+            <IntermediateAssembly  Condition=" '$(IntermediateAssemblyDone)' == '' OR '$(IntermediateAssemblyDone)' == 'False' "
+				Remove="@(IntermediateAssembly)" />
+            <IntermediateAssembly  Condition=" '$(IntermediateAssemblyDone)' == '' OR '$(IntermediateAssemblyDone)' == 'False' " 
+                Include="@(_ResolvedProjectReferencePaths->'$(IntermediateOutputPath)%(filename).$(PackageVersion).nupkg')" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="ResolveNuGetArguments" DependsOnTargets="ResolveProjectReferences">
+        <ItemGroup>
+            <ProjectReferenceWithConfiguration>
+                <Arguments>-Properties Configuration=%(Configuration)%3BPlatform=%(Platform) %(Filename)%(Extension)</Arguments>
+                <WorkingDirectory>%(RootDir)%(Directory)</WorkingDirectory>
+            </ProjectReferenceWithConfiguration>
+        </ItemGroup>
+    </Target>
+
+    <Import Project="$(MSBuildThisFileDirectory)Ed.Common.targets" />
+
+    <Target Name="Deploy" DependsOnTargets="DeployPackages" />
+
+    <Target Name="DeployPackages" DependsOnTargets="QueryVersion;ResolveProjectReferences">
+        <Error Condition=" '$(NuGetFeed)' == '' "
+               Text="The NuGetFeed must be set." />
+        <Error Condition="!HasTrailingSlash('$(NuGetFeed)')"
+               Text="The NuGetFeed must end with a trailing slash." />
+        <ItemGroup>
+            <Deploy Condition=" '$(DeployListDone)' == '' OR '$(DeployListDone)' == 'False' "
+				Include="@(_ResolvedProjectReferencePaths->'$(OutputPath)%(filename).$(PackageVersion).nupkg')" />
+            <Check Include="@(Deploy->'$(NuGetFeed)%(Filename)%(Extension)')" />
+        </ItemGroup>
+        <Error Condition="$(PreserveExistingArtifacts) == 'True' AND Exists('%(Check.FullPath)') "
+               Text="@(Check): File already exists!" />
+        <Copy SourceFiles="@(Deploy)" DestinationFolder="$(NuGetFeed)" />
+    </Target>
+
+</Project>

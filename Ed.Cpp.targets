@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+
+    <PropertyGroup>
+        <VersionInformation>$(GeneratedHeadersDirectory)VersionInformation.h</VersionInformation>
+    </PropertyGroup>
+
+    <Target Name="CleanVersionInformation" AfterTargets="Clean">
+        <Delete Files="$(VersionInformation)" />
+    </Target>
+
+    <Target Name="CreateVersionInformation"
+            BeforeTargets="ClCompile"
+            DependsOnTargets="QueryVersion"
+            Outputs="$(VersionInformation)">
+        <ItemGroup>
+            <AssemblyAttributes Include="#pragma once" />
+            <AssemblyAttributes Include="#define ASSEMBLY_VERSION_ATTRIBUTE   &quot;$(Version)&quot;" />
+            <AssemblyAttributes Include="#define PRODUCT_VERSION_ATTRIBUTE   &quot;$(PackageVersion)&quot;" />
+            <AssemblyAttributes Include="#define RESOURCE_FILENAME_ATTRIBUTE  &quot;$(TargetName)&quot;" />
+            <AssemblyAttributes Include="#define RESOURCE_VERSION_ATTRIBUTE    $(Version.Replace('.',','))" />
+        </ItemGroup>
+        <MakeDir Condition="!exists('$(GeneratedHeadersDirectory)')" Directories="$(GeneratedHeadersDirectory)" />
+        <WriteLinesToFile Condition=" '$(Version)'!='$(CachedVersion)' Or !Exists('$(VersionInformation)') "
+                          File="$(VersionInformation)"
+                          Lines="@(AssemblyAttributes)"
+                          Overwrite="true"
+                          Encoding="ASCII" />
+    </Target>
+
+
+
+    <Target Name="Sign" Condition=" $(SignExeAndMsi) == 'True' AND 
+        ($(OutputType) == 'Exe' OR $(OutputType) == 'WinExe') "
+        AfterTargets="Build">
+        <Exec Command="&quot;$(SignToolPathX64)&quot; sign /fd sha256 /td SHA256 /f &quot;$(CODE_SIGNING_CERT)&quot; /csp &quot;eToken Base Cryptographic Provider&quot; /k &quot;$(SIGN_KEY_CONTAINER)&quot; /v /debug /tr &quot;$(CODE_SIGNING_TIMESTAMP_URL)&quot; &quot;$(TargetPath)&quot;" StandardOutputImportance="high" />
+    </Target>
+
+    <Import Project="$(MSBuildThisFileDirectory)Ed.Common.targets" />
+
+</Project>

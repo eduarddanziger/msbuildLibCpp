@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+    <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
+    <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets"
+            Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
+
+    <PropertyGroup>
+        <VersionInformation>$(IntermediateOutputPath)ProductVersion.wxi</VersionInformation>
+        <IncludeSearchPaths Condition=" '$(IncludeSearchPaths)' != '' ">$(IncludeSearchPaths);</IncludeSearchPaths>
+        <IncludeSearchPaths>$(IntermediateOutputPath)</IncludeSearchPaths>
+    </PropertyGroup>
+
+    <Target Name="BeforeDeploy" BeforeTargets="DeployTargetFile" DependsOnTargets="AssignCultures" />
+
+    <Target Name="CleanVersionInformation" AfterTargets="Clean">
+        <Delete Files="$(VersionInformation)" />
+    </Target>
+
+    <Target Name="CreateVersionInformation"
+            BeforeTargets="BeforeBuild"
+            DependsOnTargets="PrepareForBuild;QueryVersion"
+            Outputs="$(VersionInformation)">
+        <ItemGroup>
+            <ProductVersionItem Include="&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;" />
+            <ProductVersionItem Include="&lt;Include&gt;" />
+            <ProductVersionItem Include="&lt;?define ProductVersion=&quot;$(Version)&quot;?&gt;" />
+            <ProductVersionItem Include="&lt;/Include&gt;" />
+        </ItemGroup>
+        <WriteLinesToFile Condition=" '$(Version)'!='$(CachedVersion)' Or !Exists('$(VersionInformation)') "
+                          File="$(VersionInformation)"
+                          Lines="@(ProductVersionItem)"
+                          Overwrite="true"
+                          Encoding="utf-8" />
+    </Target>
+    <Target Name="Sign" Condition="($(CertificateThumbprint) != '') and (($(OutputType) == 'Package'))" 
+            AfterTargets="Build">
+        <Exec Command="&quot;$(SignToolPathX64)&quot; sign /fd sha256 /sha1 $(CertificateThumbprint) /t &quot;$(TimestampUrl)&quot; &quot;$(TargetPath)&quot;" StandardOutputImportance="high" />
+    </Target>
+
+    <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
+        <Error
+            Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
+    </Target>
+
+    <Import Project="$(MSBuildThisFileDirectory)Ed.Common.targets" />
+    <Target Name="Deploy" DependsOnTargets="DeployTargetFile" />
+
+</Project>
