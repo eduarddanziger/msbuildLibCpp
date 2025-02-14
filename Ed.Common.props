@@ -8,7 +8,7 @@
     <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
             Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props') and '$(MicrosoftCommonPropsHasBeenImported)' != 'true'" />
     <PropertyGroup>
-        <ArtifactsDirectory>Y:\ForNuGet\OutputArtifacts\</ArtifactsDirectory>
+        <ArtifactsDirectory Condition=" '$(ArtifactsDirectory)' == '' ">Y:\ForNuGet\OutputArtifacts\</ArtifactsDirectory>
         <ArtifactDirectory Condition=" '$(ArtifactDirectory)' == '' ">$(TEMP)\$(MSBuildProjectName)\</ArtifactDirectory>
         <ArtifactSubDir Condition=" '$(ArtifactSubDir)' == '' "></ArtifactSubDir>
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
