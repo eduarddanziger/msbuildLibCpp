@@ -9,7 +9,7 @@
   
   <PropertyGroup>
     <WixNuGetPackagerNuGetExePath>$(NUGET)</WixNuGetPackagerNuGetExePath>
-    <WixNuGetPackagerNuGetExePath Condition=" $(WixNuGetPackagerDownloadNuGetExe) == '' and $(GITHUB_ACTIONS) == 'true' ">C:\Program Files\NuGet\nuget.exe</WixNuGetPackagerNuGetExePath>
+    <WixNuGetPackagerNuGetExePath Condition=" $(WixNuGetPackagerDownloadNuGetExe) == '' and $(GITHUB_ACTIONS) == 'true' ">nuget.exe</WixNuGetPackagerNuGetExePath>
   </PropertyGroup>
 
 </Project>
