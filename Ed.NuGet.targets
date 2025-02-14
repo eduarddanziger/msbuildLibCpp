@@ -8,7 +8,6 @@
   </Target>
   
   <PropertyGroup>
-    <WixNuGetPackagerDownloadNuGetExe>false</WixNuGetPackagerDownloadNuGetExe>
     <WixNuGetPackagerNuGetExePath>$(NUGET)</WixNuGetPackagerNuGetExePath>
     <WixNuGetPackagerDownloadNuGetExe Condition=" $(WixNuGetPackagerDownloadNuGetExe) == '' and $(WixNuGetPackagerNuGetExePath) == '' ">true</WixNuGetPackagerDownloadNuGetExe>
     <WixNuGetPackagerDownloadNuGetExe Condition=" $(WixNuGetPackagerDownloadNuGetExe) == '' and $(WixNuGetPackagerNuGetExePath) != '' ">false</WixNuGetPackagerDownloadNuGetExe>
