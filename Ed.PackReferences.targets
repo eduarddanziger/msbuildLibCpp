@@ -21,7 +21,7 @@
     </Target>
 
     <Target Name="CoreCompile"
-            DependsOnTargets="ResolveIntermediateAssembly;ResolveNuGetArguments;WixNuGetPackagerPrepare"
+            DependsOnTargets="ResolveIntermediateAssembly;ResolveNuGetArguments"
             Inputs="@(_ResolvedProjectReferencePaths);@(ProjectReferenceWithConfiguration->'%(RootDir)%(Directory)%(Filename).nuspec')"
             Outputs="@(IntermediateAssembly)">
         <ItemGroup>
