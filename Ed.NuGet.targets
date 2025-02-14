@@ -12,6 +12,7 @@
     <WixNuGetPackagerNuGetExePath Condition=" $(WixNuGetPackagerDownloadNuGetExe) == '' and $(GITHUB_ACTIONS) == 'true' ">C:\Program Files\NuGet\nuget.exe</WixNuGetPackagerNuGetExePath>
     <WixNuGetPackagerDownloadNuGetExe Condition=" $(WixNuGetPackagerDownloadNuGetExe) == '' or $(WixNuGetPackagerNuGetExePath) == '' ">true</WixNuGetPackagerDownloadNuGetExe>
     <WixNuGetPackagerDownloadNuGetExe Condition=" $(WixNuGetPackagerDownloadNuGetExe) == '' and $(WixNuGetPackagerNuGetExePath) != '' ">false</WixNuGetPackagerDownloadNuGetExe>
+    <_WixNuGetPackager_DownloadedNuGetExePath Condition=" $(GITHUB_ACTIONS) == 'true' ">C:\Program Files\NuGet\nuget.exe</_WixNuGetPackager_DownloadedNuGetExePath>
   </PropertyGroup>
 
   <Target
