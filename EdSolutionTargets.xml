@@ -72,7 +72,7 @@
     
     <Target Name="RestoreBothPackageReferenceAndPackagesconfigBasedNuGets"
             BeforeTargets="RunUnitTests"
-            DependsOnTargets="Restore">
+            DependsOnTargets="Restore;WixNuGetPackagerPrepare">
         <Exec Command="&quot;$(WixNuGetPackagerNuGetExePath)&quot; restore @(NuGetOptions, ' ') &quot;$(SolutionPath)&quot;" />
     </Target>
 

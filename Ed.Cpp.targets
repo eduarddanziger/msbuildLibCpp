@@ -8,6 +8,10 @@
         <VersionInformation>$(GeneratedHeadersDirectory)VersionInformation.h</VersionInformation>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <CertificateName Condition=" '$(CertificateName)' == '' ">MyCertificate</CertificateName>
+        <CertificatePassword Condition=" '$(CertificatePassword)' == '' ">P@SsW0Rd!</CertificatePassword>
+    </PropertyGroup>
     <Target Name="CleanVersionInformation" AfterTargets="Clean">
         <Delete Files="$(VersionInformation)" />
     </Target>
@@ -31,12 +35,12 @@
                           Encoding="ASCII" />
     </Target>
 
-
-
-    <Target Name="Sign" Condition=" $(SignExeAndMsi) == 'True' AND 
+    <Target Name="Sign" Condition=" $(SignExeAndMsi) == 'True' AND
+            Exists('$(ProjectDir)GenerateCertificate.ps1') AND
         ($(OutputType) == 'Exe' OR $(OutputType) == 'WinExe') "
         AfterTargets="Build">
-        <Exec Command="&quot;$(SignToolPathX64)&quot; sign /fd sha256 /td SHA256 /f &quot;$(CODE_SIGNING_CERT)&quot; /csp &quot;eToken Base Cryptographic Provider&quot; /k &quot;$(SIGN_KEY_CONTAINER)&quot; /v /debug /tr &quot;$(CODE_SIGNING_TIMESTAMP_URL)&quot; &quot;$(TargetPath)&quot;" StandardOutputImportance="high" />
+        <Exec Command="pwsh -ExecutionPolicy Bypass -File &quot;$(ProjectDir)GenerateCertificate.ps1&quot; -CertificateName $(CertificateName) -CertificatePassword $(CertificatePassword)" />
+        <Exec Command="&quot;$(SignToolPathX64)&quot; sign /fd sha256 /td sha256 /f &quot;$(ProjectDir)CodeSign.pfx&quot; /p $(CertificatePassword) /tr http://timestamp.digicert.com &quot;$(TargetPath)&quot;" StandardOutputImportance="high" />
     </Target>
 
     <Import Project="$(MSBuildThisFileDirectory)Ed.Common.targets" />

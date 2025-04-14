@@ -8,8 +8,27 @@
   </Target>
   
   <PropertyGroup>
+    <WixNuGetPackagerDownloadNuGetExe>false</WixNuGetPackagerDownloadNuGetExe>
     <WixNuGetPackagerNuGetExePath>$(NUGET)</WixNuGetPackagerNuGetExePath>
-    <WixNuGetPackagerNuGetExePath Condition=" $(WixNuGetPackagerDownloadNuGetExe) == '' and $(GITHUB_ACTIONS) == 'true' ">nuget.exe</WixNuGetPackagerNuGetExePath>
+    <WixNuGetPackagerDownloadNuGetExe Condition=" $(WixNuGetPackagerDownloadNuGetExe) == '' and $(WixNuGetPackagerNuGetExePath) == '' ">true</WixNuGetPackagerDownloadNuGetExe>
+    <WixNuGetPackagerDownloadNuGetExe Condition=" $(WixNuGetPackagerDownloadNuGetExe) == '' and $(WixNuGetPackagerNuGetExePath) != '' ">false</WixNuGetPackagerDownloadNuGetExe>
+    <_WixNuGetPackager_DownloadedNuGetExePath>$(MSBuildThisFileDirectory)..\tools\nuget.exe</_WixNuGetPackager_DownloadedNuGetExePath>
   </PropertyGroup>
 
+  <Target
+    Name="WixNuGetPackagerPrepare">
+    <Error
+      Condition=" $(WixNuGetPackagerDownloadNuGetExe) != 'true' and !Exists( '$(WixNuGetPackagerNuGetExePath)' ) "
+      Text="The nuget.exe path configured by the WixNuGetPackagerNuGetExePath property, '$(WixNuGetPackagerNuGetExePath)', could not be found. You must set WixNuGetPackagerNuGetExePath or set WixNuGetPackagerDownloadNuGetExe to 'true'."/>
+    
+    <MsBuild 
+      Targets="_WixNuGetPackager_DownloadNuGet" 
+      Projects="$(MSBuildThisFileDirectory)Ed.NuGetDownload.targets" 
+      Properties="Configuration=NOT_IMPORTANT;WixNuGetPackagerDownloadNuGetExe=$(WixNuGetPackagerDownloadNuGetExe);_WixNuGetPackager_DownloadedNuGetExePath=$(_WixNuGetPackager_DownloadedNuGetExePath)" />
+    
+    <PropertyGroup>
+      <WixNuGetPackagerNuGetExePath Condition=" $(WixNuGetPackagerDownloadNuGetExe) == 'true' ">$(_WixNuGetPackager_DownloadedNuGetExePath)</WixNuGetPackagerNuGetExePath>
+    </PropertyGroup>
+        
+  </Target>
 </Project>
