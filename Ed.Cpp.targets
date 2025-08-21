@@ -9,7 +9,6 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <CertificateName Condition=" '$(CertificateName)' == '' ">MyCertificate</CertificateName>
         <CertificatePassword Condition=" '$(CertificatePassword)' == '' ">P@SsW0Rd!</CertificatePassword>
     </PropertyGroup>
     <Target Name="CleanVersionInformation" AfterTargets="Clean">
@@ -35,11 +34,10 @@
                           Encoding="ASCII" />
     </Target>
 
-    <Target Name="Sign" Condition=" $(SignExeAndMsi) == 'True' AND
-            Exists('$(ProjectDir)GenerateCertificate.ps1') AND
-        ($(OutputType) == 'Exe' OR $(OutputType) == 'WinExe') "
+    <Target Name="Sign" Condition=" Exists('$(ProjectDir)GenerateCertificate.ps1') AND
+        ($(OutputType) == 'Exe' OR $(OutputType) == 'WinExe' OR $(OutputType) == 'Library') "
         AfterTargets="Build">
-        <Exec Command="pwsh -ExecutionPolicy Bypass -File &quot;$(ProjectDir)GenerateCertificate.ps1&quot; -CertificateName $(CertificateName) -CertificatePassword $(CertificatePassword)" />
+        <Exec Command="pwsh -ExecutionPolicy Bypass -File &quot;$(ProjectDir)GenerateCertificate.ps1&quot; -CertificatePassword $(CertificatePassword)" />
         <Exec Command="&quot;$(SignToolPathX64)&quot; sign /fd sha256 /td sha256 /f &quot;$(ProjectDir)CodeSign.pfx&quot; /p $(CertificatePassword) /tr http://timestamp.digicert.com &quot;$(TargetPath)&quot;" StandardOutputImportance="high" />
     </Target>
 
