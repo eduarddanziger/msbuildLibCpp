@@ -12,11 +12,12 @@
         <ArtifactDirectory Condition=" '$(ArtifactDirectory)' == '' ">$(TEMP)\$(MSBuildProjectName)\</ArtifactDirectory>
         <ArtifactSubDir Condition=" '$(ArtifactSubDir)' == '' "></ArtifactSubDir>
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-        <DescriptionScript Condition=" '$(DescriptionScript)' == '' "><![CDATA[git describe --tags --match Release-*.*.* --long]]></DescriptionScript>
+        <!-- Prefer new SemVer tags v*.*.* ; fallback to legacy Release-*.*.* -->
+        <DescriptionScript Condition=" '$(DescriptionScript)' == '' "><![CDATA[powershell -NoProfile -Command "$d = git describe --tags --long --match 'v*.*.*' 2>$null; if(-not $?) { $d = git describe --tags --long --match 'Release-*.*.*' }; Write-Output $d" ]]></DescriptionScript>
         <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
         <NoVersionNumberInArtifact Condition=" '$(NoVersionNumberInArtifact)' == '' ">false</NoVersionNumberInArtifact>
         <ExcludeMinorVersionNumber Condition=" '$(ExcludeMinorVersionNumber)' == '' ">false</ExcludeMinorVersionNumber>
-        <LatestTagScript Condition=" '$(LatestTagScript)' == '' "><![CDATA[git describe --tags --match Release-*.*.* --long]]></LatestTagScript>
+        <LatestTagScript Condition=" '$(LatestTagScript)' == '' "><![CDATA[powershell -NoProfile -Command "$d = git describe --tags --long --match 'v*.*.*' 2>$null; if(-not $?) { $d = git describe --tags --long --match 'Release-*.*.*' }; Write-Output $d" ]]></LatestTagScript>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
         <PreserveExistingArtifacts Condition=" '$(PreserveExistingArtifacts)' == '' ">True</PreserveExistingArtifacts>
         <BaseIntermediateOutputPath Condition=" '$(BaseIntermediateOutputPath)' == '' And '$(PlatformName)' == 'AnyCPU' ">obj\$(Platform)\</BaseIntermediateOutputPath>
