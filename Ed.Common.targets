@@ -25,8 +25,8 @@
         </PropertyGroup>
         <Error Condition="$(PreserveExistingArtifacts) == 'True' AND Exists('$(Artifact)') "
                Text="$(Artifact): File already exists!" />
-        <Message Text="DeployTargetFile: Copying $(TargetPath) to $(Artifact)"/>
-        <MakeDir Directories="$(ArtifactFullDirectory)" Condition="'$(ArtifactSubDir)' != '' AND !Exists('$(ArtifactFullDirectory)')"/>               
+		<Message Text="DeployTargetFile: Copying $(TargetPath) to $(Artifact)"/>
+		<MakeDir Directories="$(ArtifactFullDirectory)" Condition="'$(ArtifactSubDir)' != '' AND !Exists('$(ArtifactFullDirectory)')"/>			   
         <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(Artifact)" />
     </Target>
 
@@ -36,55 +36,25 @@
         </MSBuild>
     </Target>
 
-    <!-- UPDATED: Support both 'vMAJOR.MINOR.PATCH-DIST-gHASH' and legacy 'Release-MAJOR.MINOR.PATCH-DIST-gHASH' -->
     <Target Name="ParseWorkspaceDescription" DependsOnTargets="QueryWorkspaceDescription">
         <PropertyGroup>
-            <!-- Raw parts from git describe -->
-            <_WsPart0>$(WorkspaceDescription.Split('-')[0])</_WsPart0>
-            <_WsPart1>$(WorkspaceDescription.Split('-')[1])</_WsPart1>
-            <_WsPart2>$(WorkspaceDescription.Split('-')[2])</_WsPart2>
-            <!-- Identify style -->
-            <_IsVTag>false</_IsVTag>
-            <_IsVTag Condition="$([System.String]::Copy($(_WsPart0)).StartsWith('v'))">true</_IsVTag>
-            <_IsLegacy>false</_IsLegacy>
-            <_IsLegacy Condition="$([System.String]::Copy($(_WsPart0)).Equals('Release'))">true</_IsLegacy>
-            <!-- Base semantic version (no leading v) -->
-            <_BaseVersion Condition="$(_IsVTag) == 'true'">$([System.String]::Copy($(_WsPart0)).Substring(1))</_BaseVersion>
-            <_BaseVersion Condition="$(_IsLegacy) == 'true'">$(_WsPart1)</_BaseVersion>
-            <!-- Distance from tag -->
-            <_Distance Condition="$(_IsVTag) == 'true'">$(_WsPart1)</_Distance>
-            <_Distance Condition="$(_IsLegacy) == 'true'">$(_WsPart2)</_Distance>
-            <_Distance Condition=" '$(_Distance)' == '' ">0</_Distance>
-            <!-- Version components -->
-            <_Major>$([System.String]::Copy($(_BaseVersion)).Split('.')[0])</_Major>
-            <_Minor>$([System.String]::Copy($(_BaseVersion)).Split('.')[1])</_Minor>
-            <_Patch>$([System.String]::Copy($(_BaseVersion)).Split('.')[2])</_Patch>
-            <!-- Effective patch (increment if distance > 0 to mark RC base) -->
-            <_NextPatch Condition=" '$(_Distance)' != '0' ">$([MSBuild]::Add($(_Patch), 1))</_NextPatch>
-            <_EffectivePatch Condition=" '$(_Distance)' == '0' ">$(_Patch)</_EffectivePatch>
-            <_EffectivePatch Condition=" '$(_Distance)' != '0' ">$(_NextPatch)</_EffectivePatch>
-            <!-- Public three-part version used for package/version labeling -->
-            <VersionThree>$(_Major).$(_Minor).$(_EffectivePatch)</VersionThree>
-            <!-- Keep original distance naming compatibility -->
-            <VersionFourthNumber>$(_Distance)</VersionFourthNumber>
-            <!-- Padding for RC suffix -->
-            <PaddedVersionFourthNumber>$(_Distance)</PaddedVersionFourthNumber>
-            <PaddedVersionFourthNumber Condition="$(_Distance) &lt; 100">0$(_Distance)</PaddedVersionFourthNumber>
-            <PaddedVersionFourthNumber Condition="$(_Distance) &lt; 10">00$(_Distance)</PaddedVersionFourthNumber>
-            <!-- File / assembly style version (original base + distance) -->
-            <Version>$(_BaseVersion).$(_Distance)</Version>
-            <!-- PackageVersion (semantic) with rc suffix when distance > 0 -->
+            <VersionThree>$(WorkspaceDescription.Split('-')[1])</VersionThree>
+            <VersionFourthNumber>$(WorkspaceDescription.Split('-')[2])</VersionFourthNumber>
+            <PaddedVersionFourthNumber>$(VersionFourthNumber)</PaddedVersionFourthNumber> 
+            <PaddedVersionFourthNumber Condition="$(VersionFourthNumber) &lt; 100">0$(VersionFourthNumber)</PaddedVersionFourthNumber> 
+            <PaddedVersionFourthNumber Condition="$(VersionFourthNumber) &lt; 10">00$(VersionFourthNumber)</PaddedVersionFourthNumber> 
+            <VersionThree Condition=" $(VersionFourthNumber) != '0' ">$(VersionThree.Split('.')[0]).$(VersionThree.Split('.')[1]).$([MSBuild]::Add($(VersionThree.Split('.')[2]), 1))</VersionThree>
+            <Version>$(VersionThree).$(VersionFourthNumber)</Version>
             <PackageVersion>$(VersionThree)</PackageVersion>
-            <PackageVersion Condition=" '$(_Distance)' != '0' ">$(VersionThree)-rc$(PaddedVersionFourthNumber)</PackageVersion>
-            <!-- Artifact naming suffix (optionally drop minor distance) -->
+            <PackageVersion Condition=" $(VersionFourthNumber) != '0' ">$(VersionThree)-RC$(PaddedVersionFourthNumber)</PackageVersion>
             <VersionFileSuffix Condition=" '$(ExcludeMinorVersionNumber)' != 'true' ">$(Version)</VersionFileSuffix>
-            <VersionFileSuffix Condition=" '$(ExcludeMinorVersionNumber)' == 'true' ">$(_Major).$(_Minor)</VersionFileSuffix>
+            <VersionFileSuffix Condition=" '$(ExcludeMinorVersionNumber)' == 'true' ">$(Version.Split('.')[0]).$(Version.Split('.')[1])</VersionFileSuffix>
             <ArtifactSubDir Condition=" '$(ArtifactSubDir)' != '' ">$(ArtifactSubDir)-$(Version)\</ArtifactSubDir>
         </PropertyGroup>
-        <Message Importance="high" Text="ParseWorkspaceDescription WorkspaceDescription=$(WorkspaceDescription)" />
-        <Message Importance="high" Text="ParseWorkspaceDescription Style: VTag=$(_IsVTag) Legacy=$(_IsLegacy) Base=$(_BaseVersion) Distance=$(_Distance)" />
-        <Message Importance="high" Text="ParseWorkspaceDescription PackageVersion(ProductVersion)=$(PackageVersion) FileVersion=$(Version)" />
-        <Message Importance="high" Text="ParseWorkspaceDescription ArtifactSubDir=$(ArtifactSubDir)" />
+		<message Importance="high" text="ParseWorkspaceDescription Version: $(Version)" />
+		<message Importance="high" text="ParseWorkspaceDescription VersionFileSuffix: $(VersionFileSuffix)" />
+		<message Importance="high" text="ParseWorkspaceDescription ArtifactSubDir: $(ArtifactSubDir)" />
+		<message Importance="high" text="ParseWorkspaceDescription PackageVersion: $(PackageVersion)" />
     </Target>
 
     <Target Name="QueryVersion" DependsOnTargets="ParseWorkspaceDescription;PrepareForBuild" Returns="$(Version)">
@@ -98,14 +68,14 @@
             <CacheItems Include="&lt;/Project&gt;" />
         </ItemGroup>
         <WriteLinesToFile File="$(VersionCache)" Lines="@(CacheItems)" Overwrite="true" Encoding="utf-8" />
-        <Message Text="QueryVersion Version: $(Version) PackageVersion: $(PackageVersion)" />
+		<message text="QueryVersion Version: $(Version)" />
     </Target>
 
     <Target Name="QueryAncestorDescription" DependsOnTargets="ResolveAncestor">
         <Exec Command="$(LatestTagScript) --rev ancestor(@(Ancestors,','))" ConsoleToMSBuild="true">
             <Output TaskParameter="ConsoleOutput" PropertyName="AncestorDescription" />
         </Exec>
-        <Message Text="QueryAncestorDescription AncestorDescription: $(AncestorDescription)" />
+		<message text="QueryAncestorDescription AncestorDescription: $(AncestorDescription)" />
     </Target>
 
     <Target Name="QueryWorkspaceDescription">
@@ -115,13 +85,13 @@
     </Target>
 
     <Target Name="ResolveAncestor">
-        <Exec Command="§(AncestorScript)">
+		<Exec Command="§(AncestorScript)">
             <Output TaskParameter="ConsoleOutput" ItemName="AncestorsID" />
         </Exec>
         <PropertyGroup>
-            <Ancestors>$(AncestorsID.Split('-')[1])</Ancestors>
+			<Ancestors>$(AncestorsID.Split('-')[1])</Ancestors>
         </PropertyGroup>
-        <Message Text="Ancestors: $(Ancestors)" />
+		<message text="Ancestors: $(Ancestors)" />
     </Target>
 
     <Target Name="ResolveArtifactFileName" DependsOnTargets="QueryVersion">
