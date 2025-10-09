@@ -45,8 +45,8 @@
             <PaddedVersionFourthNumber Condition="$(VersionFourthNumber) &lt; 10">00$(VersionFourthNumber)</PaddedVersionFourthNumber> 
             <VersionThree Condition=" $(VersionFourthNumber) != '0' ">$(VersionThree.Split('.')[0]).$(VersionThree.Split('.')[1]).$([MSBuild]::Add($(VersionThree.Split('.')[2]), 1))</VersionThree>
             <Version>$(VersionThree).$(VersionFourthNumber)</Version>
-            <PackageVersion>$(VersionThree)</PackageVersion>
-            <PackageVersion Condition=" $(VersionFourthNumber) != '0' ">$(VersionThree)-RC$(PaddedVersionFourthNumber)</PackageVersion>
+            <PackageVersion>v$(VersionThree)</PackageVersion>
+            <PackageVersion Condition=" $(VersionFourthNumber) != '0' ">v$(VersionThree)-rc$(PaddedVersionFourthNumber)</PackageVersion>
             <VersionFileSuffix Condition=" '$(ExcludeMinorVersionNumber)' != 'true' ">$(Version)</VersionFileSuffix>
             <VersionFileSuffix Condition=" '$(ExcludeMinorVersionNumber)' == 'true' ">$(Version.Split('.')[0]).$(Version.Split('.')[1])</VersionFileSuffix>
             <ArtifactSubDir Condition=" '$(ArtifactSubDir)' != '' ">$(ArtifactSubDir)-$(Version)\</ArtifactSubDir>
