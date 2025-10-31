@@ -40,13 +40,10 @@
         <PropertyGroup>
             <VersionThree>$(WorkspaceDescription.Split('-')[1])</VersionThree>
             <VersionFourthNumber>$(WorkspaceDescription.Split('-')[2])</VersionFourthNumber>
-            <PaddedVersionFourthNumber>$(VersionFourthNumber)</PaddedVersionFourthNumber> 
-            <PaddedVersionFourthNumber Condition="$(VersionFourthNumber) &lt; 100">0$(VersionFourthNumber)</PaddedVersionFourthNumber> 
-            <PaddedVersionFourthNumber Condition="$(VersionFourthNumber) &lt; 10">00$(VersionFourthNumber)</PaddedVersionFourthNumber> 
             <VersionThree Condition=" $(VersionFourthNumber) != '0' ">$(VersionThree.Split('.')[0]).$(VersionThree.Split('.')[1]).$([MSBuild]::Add($(VersionThree.Split('.')[2]), 1))</VersionThree>
             <Version>$(VersionThree).$(VersionFourthNumber)</Version>
             <PackageVersion>v$(VersionThree)</PackageVersion>
-            <PackageVersion Condition=" $(VersionFourthNumber) != '0' ">v$(VersionThree)-rc$(PaddedVersionFourthNumber)</PackageVersion>
+            <PackageVersion Condition=" $(VersionFourthNumber) != '0' ">v$(VersionThree)-rc.$(VersionFourthNumber)</PackageVersion>
             <VersionFileSuffix Condition=" '$(ExcludeMinorVersionNumber)' != 'true' ">$(Version)</VersionFileSuffix>
             <VersionFileSuffix Condition=" '$(ExcludeMinorVersionNumber)' == 'true' ">$(Version.Split('.')[0]).$(Version.Split('.')[1])</VersionFileSuffix>
             <ArtifactSubDir Condition=" '$(ArtifactSubDir)' != '' ">$(ArtifactSubDir)-$(Version)\</ArtifactSubDir>
