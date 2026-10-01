@@ -6,6 +6,8 @@
 
     <PropertyGroup>
         <VersionInformation>$(GeneratedHeadersDirectory)VersionInformation.h</VersionInformation>
+        <Company Condition=" '$(Company)' == '' ">Eduard Danziger</Company>
+        <Copyright Condition=" '$(Copyright)' == '' ">Copyright © 2025-$([System.DateTime]::UtcNow.Year) $(Company)</Copyright>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -35,6 +37,9 @@
             <AssemblyAttributes Include="#define ASSEMBLY_VERSION_ATTRIBUTE   &quot;$(Version)&quot;" />
             <AssemblyAttributes Include="#define PRODUCT_VERSION_ATTRIBUTE   &quot;$(PackageVersion)&quot;" />
             <AssemblyAttributes Include="#define RESOURCE_FILENAME_ATTRIBUTE  &quot;$(TargetName)&quot;" />
+            <!-- © as octal escape (Windows-1252), keeps the header ASCII-only for /utf-8 compilation -->
+            <AssemblyAttributes Include="#define ASSEMBLY_COMPANY_ATTRIBUTE   &quot;$(Company)&quot;" />
+            <AssemblyAttributes Include="#define ASSEMBLY_COPYRIGHT_ATTRIBUTE &quot;$(Copyright.Replace('©', '\251'))&quot;" />
             <AssemblyAttributes Include="#define ORIGINAL_FILENAME_ATTRIBUTE  &quot;$(TargetFileName)&quot;" />
             <AssemblyAttributes Include="#define FILE_DESCRIPTION_ATTRIBUTE   &quot;$(TargetFileName) ($(FileDescriptionTag))&quot;" />
             <AssemblyAttributes Include="#define RESOURCE_VERSION_ATTRIBUTE    $(Version.Replace('.',','))" />
