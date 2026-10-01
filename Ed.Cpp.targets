@@ -19,18 +19,31 @@
             BeforeTargets="ClCompile"
             DependsOnTargets="QueryVersion"
             Outputs="$(VersionInformation)">
+        <!-- File description tag, e.g. win-x64-v143-static, analogous to TargetFramework in C# -->
+        <PropertyGroup>
+            <_EdRuntimeLibrary>@(ClCompile->'%(RuntimeLibrary)'->Distinct())</_EdRuntimeLibrary>
+            <_EdCrtLinkage Condition=" '$(_EdRuntimeLibrary)' == 'MultiThreaded' Or '$(_EdRuntimeLibrary)' == 'MultiThreadedDebug' ">static</_EdCrtLinkage>
+            <_EdCrtLinkage Condition=" '$(_EdRuntimeLibrary)' == 'MultiThreadedDLL' Or '$(_EdRuntimeLibrary)' == 'MultiThreadedDebugDLL' ">dynamic</_EdCrtLinkage>
+            <_EdArch>$(Platform.ToLower())</_EdArch>
+            <_EdArch Condition=" '$(Platform)' == 'Win32' ">x86</_EdArch>
+            <FileDescriptionTag Condition=" '$(FileDescriptionTag)' == '' ">win-$(_EdArch)-$(PlatformToolset)-$(_EdCrtLinkage)</FileDescriptionTag>
+        </PropertyGroup>
+        <Warning Condition=" '$(_EdCrtLinkage)' == '' "
+                 Text="Cannot determine CRT linkage from RuntimeLibrary '$(_EdRuntimeLibrary)'." />
         <ItemGroup>
             <AssemblyAttributes Include="#pragma once" />
             <AssemblyAttributes Include="#define ASSEMBLY_VERSION_ATTRIBUTE   &quot;$(Version)&quot;" />
             <AssemblyAttributes Include="#define PRODUCT_VERSION_ATTRIBUTE   &quot;$(PackageVersion)&quot;" />
             <AssemblyAttributes Include="#define RESOURCE_FILENAME_ATTRIBUTE  &quot;$(TargetName)&quot;" />
+            <AssemblyAttributes Include="#define ORIGINAL_FILENAME_ATTRIBUTE  &quot;$(TargetFileName)&quot;" />
+            <AssemblyAttributes Include="#define FILE_DESCRIPTION_ATTRIBUTE   &quot;$(TargetFileName) ($(FileDescriptionTag))&quot;" />
             <AssemblyAttributes Include="#define RESOURCE_VERSION_ATTRIBUTE    $(Version.Replace('.',','))" />
         </ItemGroup>
         <MakeDir Condition="!exists('$(GeneratedHeadersDirectory)')" Directories="$(GeneratedHeadersDirectory)" />
-        <WriteLinesToFile Condition=" '$(Version)'!='$(CachedVersion)' Or !Exists('$(VersionInformation)') "
-                          File="$(VersionInformation)"
+        <WriteLinesToFile File="$(VersionInformation)"
                           Lines="@(AssemblyAttributes)"
                           Overwrite="true"
+                          WriteOnlyWhenDifferent="true"
                           Encoding="ASCII" />
     </Target>
 
